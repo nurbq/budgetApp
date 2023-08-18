@@ -1,4 +1,4 @@
-package com.budget.budgetapp.models;
+package com.budget.budgetapp.dao.entities;
 
 import jakarta.persistence.*;
 import lombok.Data;
