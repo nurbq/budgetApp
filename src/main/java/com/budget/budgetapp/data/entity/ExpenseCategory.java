@@ -1,4 +1,4 @@
-package com.budget.budgetapp.dao.entities;
+package com.budget.budgetapp.data.entity;
 
 
 import jakarta.persistence.*;
@@ -20,7 +20,7 @@ public class ExpenseCategory {
 
     @ManyToOne
     @JoinColumn(name = "user_id")
-    private Users user;
+    private UserEntity user;
 
     @OneToMany(mappedBy = "expenseCategory", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private Set<Expense> expenses;

@@ -1,4 +1,4 @@
-package com.budget.budgetapp.dao.entities;
+package com.budget.budgetapp.data.entity;
 
 
 import jakarta.persistence.*;
@@ -17,5 +17,5 @@ public class Role {
 
     @ManyToOne
     @JoinColumn(name = "user_id")
-    private Users user;
+    private UserEntity user;
 }
