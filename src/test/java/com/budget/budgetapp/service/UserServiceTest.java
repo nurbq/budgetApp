@@ -5,7 +5,7 @@ import com.budget.budgetapp.data.entity.UserEntity;
 import com.budget.budgetapp.data.repository.UserRepository;
 import com.budget.budgetapp.error.ConflictException;
 import com.budget.budgetapp.error.NotFoundException;
-import com.budget.budgetapp.model.UserDto;
+import com.budget.budgetapp.model.dtos.UserDto;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,7 +35,7 @@ public class UserServiceTest {
     void getAllUsers() {
         doReturn(getMockUsers(2)).when(userRepository).findAll();
         List<UserDto> userEntities = userService.getAllUsers();
-        assertThat(2).isEqualTo((long) userEntities.size());
+        assertThat(userEntities.size()).isEqualTo(2);
     }
 
     @Test
@@ -135,7 +135,7 @@ public class UserServiceTest {
         doReturn(optional).when(userRepository).findByEmail(user.getEmail());
         when(userRepository.save(any(UserEntity.class))).thenReturn(user);
         UserDto userDto = new UserDto(user.getId(), user.getUsername(), user.getEmail(), user.getPassword());
-        userDto = userService.updateUser(userDto);
+        userDto = userService.updateUser(userDto.getId(), userDto);
 
         assertThat(userDto).isNotNull();
         assertThat(userDto.getEmail()).isEqualTo("testEmail");
@@ -148,7 +148,7 @@ public class UserServiceTest {
         doReturn(optional).when(userRepository).findByEmail(userEntity.getEmail());
         UserDto userDto = new UserDto(userEntity.getId(), userEntity.getUsername(), userEntity.getEmail(), userEntity.getPassword());
 
-        Assertions.assertThatThrownBy(() -> userService.updateUser(userDto))
+        Assertions.assertThatThrownBy(() -> userService.updateUser(userDto.getId(), userDto))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("user not found");
     }
