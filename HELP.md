@@ -11,7 +11,7 @@ For further reference, please consider the following sections:
 * [Docker Compose Support](https://docs.spring.io/spring-boot/docs/3.1.2/reference/htmlsingle/index.html#features.docker-compose)
 * [Spring Security](https://docs.spring.io/spring-boot/docs/3.1.2/reference/htmlsingle/index.html#web.security)
 * [Validation](https://docs.spring.io/spring-boot/docs/3.1.2/reference/htmlsingle/index.html#io.validation)
-* [Spring Data JPA](https://docs.spring.io/spring-boot/docs/3.1.2/reference/htmlsingle/index.html#data.sql.jpa-and-spring-data)
+* [Spring Data JPA](https://docs.spring.io/spring-boot/docs/3.1.2/reference/htmlsingle/index.html#data_.dsql.jpa-and-spring-data)
 
 ### Guides
 
