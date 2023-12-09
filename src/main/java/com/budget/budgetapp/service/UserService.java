@@ -1,12 +1,12 @@
 package com.budget.budgetapp.service;
 
 import com.budget.budgetapp.data.entity.UserEntity;
-import com.budget.budgetapp.data.repository.RoleRepository;
 import com.budget.budgetapp.data.repository.UserRepository;
 import com.budget.budgetapp.error.BadRequestException;
 import com.budget.budgetapp.error.ConflictException;
 import com.budget.budgetapp.error.NotFoundException;
 import com.budget.budgetapp.model.dtos.UserDto;
+import com.budget.budgetapp.model.mappers.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,10 +23,11 @@ public class UserService {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
+    private final UserMapper userMapper;
+
 
     public List<UserDto> getAllUsers() {
-        return userRepository.findAll().stream().map(this::mapToUserDto).collect(Collectors.toList());
+        return userRepository.findAll().stream().map(userMapper::toDto).collect(Collectors.toList());
     }
 
     public UserDto addUser(UserDto userDto) {
@@ -36,7 +37,7 @@ public class UserService {
             throw new ConflictException("user already exists");
         }
 
-        UserEntity user = maptoUserEntity(userDto);
+        UserEntity user = userMapper.toUserEntity(userDto);
 //        user.setCreatedDate(LocalDateTime.now());
 
 //        Role role = new Role();
@@ -47,9 +48,8 @@ public class UserService {
 //        roleRepository.save(role);
         user = userRepository.save(user);
 
-        return mapToUserDto(user);
+        return userMapper.toDto(user);
     }
-
 
 
     public UserDto getUserById(Long id) {
@@ -59,7 +59,7 @@ public class UserService {
             throw new NotFoundException("user not found id: " + id);
         }
 
-        return mapToUserDto(userEntity.get());
+        return userMapper.toDto(userEntity.get());
     }
 
     public UserDto getByUsername(String username) {
@@ -69,7 +69,7 @@ public class UserService {
             throw new NotFoundException("user not found username: " + username);
         }
 
-        return mapToUserDto(userEntity.get());
+        return userMapper.toDto(userEntity.get());
     }
 
     public UserDto getByEmail(String email) {
@@ -77,7 +77,7 @@ public class UserService {
         if (user.isEmpty()) {
             throw new NotFoundException("user not found email: " + email);
         }
-        return mapToUserDto(user.get());
+        return userMapper.toDto(user.get());
     }
 
     public UserDto updateUser(Long id, UserDto userDto) {
@@ -90,11 +90,11 @@ public class UserService {
             throw new NotFoundException("user not found");
         }
 
-        UserEntity userEntity = maptoUserEntity(userDto);
+        UserEntity userEntity = userMapper.toUserEntity(userDto);
         userEntity.setId(existingUser.get().getId());
         userEntity = userRepository.save(userEntity);
 
-        return mapToUserDto(userEntity);
+        return userMapper.toDto(userEntity);
     }
 
     public void deleteUser(Long id) {
@@ -104,27 +104,5 @@ public class UserService {
         }
 
         userRepository.deleteById(id);
-    }
-
-    private UserDto mapToUserDto(UserEntity userEntity) {
-        return UserDto.builder()
-                .id(userEntity.getId())
-                .username(userEntity.getUsername())
-                .email(userEntity.getEmail())
-                .password(userEntity.getPassword())
-//                .createdDate(userEntity.getCreatedDate())
-//                .authorities(userEntity.getAuthorities())
-                .build();
-    }
-
-    private UserEntity maptoUserEntity(UserDto userDto) {
-        return UserEntity.builder()
-                .id(userDto.getId())
-                .username(userDto.getUsername())
-                .email(userDto.getEmail())
-                .password(userDto.getPassword())
-//                .createdDate(userDto.getCreatedDate())
-//                .authorities(userDto.getAuthorities())
-                .build();
     }
 }

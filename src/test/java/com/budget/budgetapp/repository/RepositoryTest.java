@@ -11,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import java.util.List;
+import java.util.Optional;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(connection = EmbeddedDatabaseConnection.H2)
@@ -35,6 +36,20 @@ public class RepositoryTest {
 
         Assertions.assertThat(users.size()).isEqualTo(6);
         System.out.println(users.size());
+    }
+
+    @Test
+    void successful_get_user_by_email() {
+        UserEntity user = new UserEntity();
+        user.setUsername("Jane Doe");
+        user.setEmail("jane@test.com");
+        user.setPassword("test");
+        userRepository.save(user);
+
+        Optional<UserEntity> found = userRepository.findByEmail("jane@test.com");
+
+        Assertions.assertThat(found.isPresent()).isTrue();
+        Assertions.assertThat("Jane Doe").isEqualTo(found.get().getUsername());
     }
 
 
