@@ -6,6 +6,7 @@ import com.budget.budgetapp.data.repository.UserRepository;
 import com.budget.budgetapp.error.ConflictException;
 import com.budget.budgetapp.error.NotFoundException;
 import com.budget.budgetapp.model.dtos.UserDto;
+import com.budget.budgetapp.model.mappers.UserMapper;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +27,8 @@ public class UserServiceTest {
 
     @Mock
     UserRepository userRepository;
+    @Mock
+    UserMapper userMapper;
 
     @InjectMocks
     private UserService userService;
@@ -41,12 +44,17 @@ public class UserServiceTest {
     @Test
     void addUser() {
         UserEntity userEntity = getUserEntity();
+        UserDto userDto = new UserDto(null, "testUsername", "testEmail", "testPassword");
+
+        when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
         when(userRepository.save(any(UserEntity.class))).thenReturn(userEntity);
-        UserDto userDto = new UserDto(userEntity.getId(), userEntity.getUsername(), userEntity.getEmail(), userEntity.getPassword());
+        when(userMapper.toUserEntity(any(UserDto.class))).thenReturn(userEntity);
+        when(userMapper.toDto(any(UserEntity.class))).thenReturn(userDto);
+
         userDto = userService.addUser(userDto);
 
-        assertThat(userDto).isNotNull();
-        assertThat(userDto.getEmail()).isEqualTo("testEmail");
+        Assertions.assertThat(userDto).isNotNull();
+        Assertions.assertThat(userDto.getEmail()).isEqualTo("testEmail");
     }
 
     @Test
@@ -64,13 +72,17 @@ public class UserServiceTest {
     @Test
     void getUserById() {
         UserEntity userEntity = getUserEntity();
+        UserDto userDto = new UserDto(1L, "testUsername", "testEmail", "testPassword");
         Optional<UserEntity> optional = Optional.of(userEntity);
-        doReturn(optional).when(userRepository).findById(userEntity.getId());
+        doReturn(optional).when(userRepository).findById(anyLong());
+        doReturn(userDto).when(userMapper).toDto(any(UserEntity.class));
 
-        UserDto userDto = userService.getUserById(userEntity.getId());
+        userDto = userService.getUserById(userEntity.getId());
 
         assertThat(userDto).isNotNull();
         assertThat(userDto.getUsername()).isEqualTo("testUsername");
+
+        verify(userRepository, times(1)).findById(userEntity.getId());
     }
 
     @Test
