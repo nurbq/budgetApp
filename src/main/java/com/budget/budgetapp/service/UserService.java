@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,11 +30,10 @@ public class UserService {
     }
 
     public UserDto addUser(UserDto userDto) {
-        Optional<UserEntity> userFromDb = userRepository.findByEmail(userDto.getEmail());
-
-        if (userFromDb.isPresent()) {
-            throw new ConflictException("user already exists");
-        }
+        userRepository.findByEmail(userDto.getEmail())
+                .ifPresent(user -> {
+                    throw new ConflictException("user already exists");
+                });
 
         UserEntity user = userMapper.toUserEntity(userDto);
 //        user.setCreatedDate(LocalDateTime.now());
@@ -53,31 +51,18 @@ public class UserService {
 
 
     public UserDto getUserById(Long id) {
-        Optional<UserEntity> userEntity = userRepository.findById(id);
-
-        if (userEntity.isEmpty()) {
-            throw new NotFoundException("user not found id: " + id);
-        }
-
-        return userMapper.toDto(userEntity.get());
+        return userRepository.findById(id).map(userMapper::toDto)
+                .orElseThrow(() -> new NotFoundException("User not found, id: " + id));
     }
 
     public UserDto getByUsername(String username) {
-        Optional<UserEntity> userEntity = userRepository.findByUsername(username);
-
-        if (userEntity.isEmpty()) {
-            throw new NotFoundException("user not found username: " + username);
-        }
-
-        return userMapper.toDto(userEntity.get());
+        return userRepository.findByUsername(username).map(userMapper::toDto)
+                .orElseThrow(() -> new NotFoundException("User not found, username: " + username));
     }
 
     public UserDto getByEmail(String email) {
-        Optional<UserEntity> user = userRepository.findByEmail(email);
-        if (user.isEmpty()) {
-            throw new NotFoundException("user not found email: " + email);
-        }
-        return userMapper.toDto(user.get());
+        return userRepository.findByEmail(email).map(userMapper::toDto)
+                .orElseThrow(() -> new NotFoundException("User not found, email: " + email));
     }
 
     public UserDto updateUser(Long id, UserDto userDto) {
@@ -85,24 +70,23 @@ public class UserService {
             throw new BadRequestException("path variable must match incoming request id");
         }
 
-        Optional<UserEntity> existingUser = userRepository.findByEmail(userDto.getEmail());
-        if (existingUser.isEmpty()) {
-            throw new NotFoundException("user not found");
-        }
+        UserEntity existingUser = userRepository.findByEmail(userDto.getEmail())
+                .orElseThrow(() -> new NotFoundException("user not found"));
 
         UserEntity userEntity = userMapper.toUserEntity(userDto);
-        userEntity.setId(existingUser.get().getId());
+        userEntity.setId(existingUser.getId());
         userEntity = userRepository.save(userEntity);
 
         return userMapper.toDto(userEntity);
     }
 
     public void deleteUser(Long id) {
-        Optional<UserEntity> userEntity = userRepository.findById(id);
-        if (userEntity.isEmpty()) {
-            throw new NotFoundException("user not found");
-        }
-
-        userRepository.deleteById(id);
+        userRepository.findById(id)
+                .ifPresentOrElse(
+                        userEntity -> userRepository.deleteById(id),
+                        () -> {
+                            throw new NotFoundException("user not found");
+                        }
+                );
     }
 }

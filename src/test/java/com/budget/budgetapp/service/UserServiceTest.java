@@ -93,15 +93,17 @@ public class UserServiceTest {
 
         Assertions.assertThatThrownBy(() -> {
             userService.getUserById(userEntity.getId());
-        }).isInstanceOf(NotFoundException.class).hasMessageContaining("user not found");
+        }).isInstanceOf(NotFoundException.class).hasMessageContaining("User not found, id: 1");
     }
 
     @Test
     void getUserByUsername() {
         UserEntity userEntity = getUserEntity();
+        UserDto userDto = new UserDto(1L, "testUsername", "testEmail", "testPassword");
         Optional<UserEntity> optional = Optional.of(userEntity);
         doReturn(optional).when(userRepository).findByUsername(userEntity.getUsername());
-        UserDto userDto = userService.getByUsername(userEntity.getUsername());
+        doReturn(userDto).when(userMapper).toDto(any(UserEntity.class));
+        userDto = userService.getByUsername(userEntity.getUsername());
 
         assertThat(userDto).isNotNull();
         assertThat(userDto.getUsername()).isEqualTo("testUsername");
@@ -115,15 +117,17 @@ public class UserServiceTest {
 
         Assertions.assertThatThrownBy(() -> {
             userService.getByUsername(userEntity.getUsername());
-        }).isInstanceOf(NotFoundException.class).hasMessageContaining("user not found");
+        }).isInstanceOf(NotFoundException.class).hasMessageContaining("User not found, username: testUsername");
     }
 
     @Test
     void getUserByEmail() {
         UserEntity userEntity = getUserEntity();
+        UserDto userDto = new UserDto(1L, "testUsername", "testEmail", "testPassword");
         Optional<UserEntity> optional = Optional.of(userEntity);
         doReturn(optional).when(userRepository).findByEmail(userEntity.getEmail());
-        UserDto userDto = userService.getByEmail(userEntity.getEmail());
+        doReturn(userDto).when(userMapper).toDto(any(UserEntity.class));
+        userDto = userService.getByEmail(userEntity.getEmail());
 
         assertThat(userDto).isNotNull();
         assertThat(userDto.getEmail()).isEqualTo("testEmail");
@@ -137,7 +141,7 @@ public class UserServiceTest {
 
         Assertions.assertThatThrownBy(() -> {
             userService.getByEmail(user.getEmail());
-        }).isInstanceOf(NotFoundException.class).hasMessageContaining("user not found");
+        }).isInstanceOf(NotFoundException.class).hasMessageContaining("User not found, email: testEmail");
     }
 
     @Test
@@ -174,6 +178,8 @@ public class UserServiceTest {
         doNothing().when(userRepository).deleteById(userEntity.getId());
 
         userService.deleteUser(userEntity.getId());
+
+        verify(userRepository, times(1)).deleteById(userEntity.getId());
     }
 
     @Test
