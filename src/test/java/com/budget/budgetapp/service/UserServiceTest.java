@@ -40,7 +40,6 @@ public class UserServiceTest {
         List<UserDto> userEntities = userService.getAllUsers();
         assertThat(userEntities.size()).isEqualTo(2);
     }
-
     @Test
     void addUser() {
         UserEntity userEntity = getUserEntity();
@@ -205,5 +204,4 @@ public class UserServiceTest {
         }
         return users;
     }
-
 }

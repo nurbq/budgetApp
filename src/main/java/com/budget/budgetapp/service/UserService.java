@@ -42,7 +42,6 @@ public class UserService {
 //        role.setName(Roles.USER);
 //        role.setUser(user);
 
-        LOGGER.info("UserService.findAddUser");
 //        roleRepository.save(role);
         user = userRepository.save(user);
 
