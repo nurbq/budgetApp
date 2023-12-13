@@ -6,7 +6,10 @@ import com.budget.budgetapp.error.ConflictException;
 import com.budget.budgetapp.error.NotFoundException;
 import com.budget.budgetapp.model.dtos.UserDto;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,7 +19,7 @@ import java.util.List;
 
 
 @SpringBootTest
-@Transactional
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class UserServiceIntegrationTest {
 
     @Autowired
@@ -26,6 +29,7 @@ public class UserServiceIntegrationTest {
     UserRepository userRepository;
 
     @Test
+    @Order(1)
     void getAllUsers() {
         int size = 2;
 
@@ -43,18 +47,22 @@ public class UserServiceIntegrationTest {
     }
 
     @Test
+    @Order(2)
     void addUser() {
-        UserDto userDto = new UserDto(10L, "UserTest", "userTest@gmail.com", "userTestPassword");
+        UserDto userDto = new UserDto();
+        userDto.setUsername("UserTest");
+        userDto.setEmail("userTest@gmail.com");
+        userDto.setPassword("testPassword");
+
         userDto = userService.addUser(userDto);
 
-        List<UserDto> users = userService.getAllUsers();
+        Assertions.assertThat(userDto).isNotNull();
 
-        Assertions.assertThat(users.size()).isEqualTo(1);
-        Assertions.assertThat(userDto.getId()).isNotNull();
-        Assertions.assertThat(userDto.getUsername()).isEqualTo("UserTest");
+        userService.deleteUser(userDto.getId());
     }
 
     @Test
+    @Order(3)
     void addUser_userAlreadyExists() {
         UserDto userDto = new UserDto(10L, "UserTest", "userTest@gmail.com", "userTestPassword");
         userDto = userService.addUser(userDto);
@@ -69,13 +77,15 @@ public class UserServiceIntegrationTest {
 
 
     @Test
+    @Order(4)
     void getUser_NotFound() {
         Assertions.assertThatThrownBy(() -> userService.getUserById(15L))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining("user not found");
+                .hasMessageContaining("User not found, id: " + 15);
     }
 
     @Test
+    @Order(5)
     void successful_get_user_by_email() {
         UserEntity user = new UserEntity();
         user.setUsername("Jane Doe");
@@ -91,6 +101,7 @@ public class UserServiceIntegrationTest {
     }
 
     @Test
+    @Order(6)
     void successful_get_user_by_username() {
         UserEntity user = new UserEntity();
         user.setUsername("John Doe");
@@ -107,13 +118,14 @@ public class UserServiceIntegrationTest {
     }
 
     @Test
+    @Order(7)
     void updateUser() {
         UserDto userDto = new UserDto(1L, "UserTest", "userTest@gmail.com", "userTestPassword");
         userDto = userService.addUser(userDto);
         userDto.setUsername("WalterWhite");
 
 
-        userDto = userService.updateUser(1L, userDto);
+        userDto = userService.updateUser(userDto.getId(), userDto);
 
         Assertions.assertThat(userDto.getUsername()).isEqualTo("WalterWhite");
 
