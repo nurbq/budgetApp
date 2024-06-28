@@ -8,13 +8,12 @@ import com.budget.budgetapp.model.dtos.UserCreateDto;
 import com.budget.budgetapp.model.dtos.UserDto;
 import com.budget.budgetapp.model.dtos.UserExpenseDto;
 import com.budget.budgetapp.model.mappers.UserMapper;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
