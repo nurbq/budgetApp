@@ -31,9 +31,9 @@ public class UserEntity {
     @Column(nullable = false)
     private String password;
 
-//    @Column(name = "created_date")
-//    private LocalDateTime createdDate;
-//
+    @Column(name = "created_date")
+    private LocalDateTime createdDate;
+
 //    @OneToMany(mappedBy = "user", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
 //    private Set<Role> authorities;
 //

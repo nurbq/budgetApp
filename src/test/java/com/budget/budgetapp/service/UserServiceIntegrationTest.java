@@ -2,25 +2,35 @@ package com.budget.budgetapp.service;
 
 import com.budget.budgetapp.data.entity.UserEntity;
 import com.budget.budgetapp.data.repository.UserRepository;
-import com.budget.budgetapp.error.ConflictException;
-import com.budget.budgetapp.error.NotFoundException;
+import com.budget.budgetapp.exception.ConflictException;
+import com.budget.budgetapp.exception.NotFoundException;
+import com.budget.budgetapp.model.dtos.UserCreateDto;
 import com.budget.budgetapp.model.dtos.UserDto;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.test.context.ActiveProfiles;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.List;
 
 
-@SpringBootTest
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@ActiveProfiles("test")
+@Testcontainers
 public class UserServiceIntegrationTest {
+
+    @Container
+    @ServiceConnection
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(DockerImageName.parse(
+            "postgres:15-alpine"));
 
     @Autowired
     UserService userService;
@@ -28,56 +38,46 @@ public class UserServiceIntegrationTest {
     @Autowired
     UserRepository userRepository;
 
+    @BeforeEach
+    void setUp() {
+        userRepository.deleteAll();
+    }
+
+
     @Test
-    @Order(1)
     void getAllUsers() {
         int size = 2;
-
-
         for (int i = 1; i <= size; i++) {
-            userRepository.save(new UserEntity((long) i, "testUsername" + i, "email" + i, "password" + i));
+            userRepository.save(new UserEntity((long) i, "testUsername" + i, "email" + i, "password" + i, LocalDateTime.now()));
         }
 
         List<UserDto> users = userService.getAllUsers();
         Assertions.assertThat(users.size()).isEqualTo(size);
 
-        for (int i = 1; i <= size; i++) {
-            userService.deleteUser((long) i);
-        }
     }
 
     @Test
-    @Order(2)
     void addUser() {
-        UserDto userDto = new UserDto();
-        userDto.setUsername("UserTest");
-        userDto.setEmail("userTest@gmail.com");
-        userDto.setPassword("testPassword");
+        UserCreateDto userCreateDto = new UserCreateDto("testUsername", "testEmail", "testPassword");
 
-        userDto = userService.addUser(userDto);
+        UserDto userDto = userService.addUser(userCreateDto);
 
         Assertions.assertThat(userDto).isNotNull();
-
-        userService.deleteUser(userDto.getId());
+        Assertions.assertThat(userDto.email()).isEqualTo(userCreateDto.email());
     }
 
     @Test
-    @Order(3)
     void addUser_userAlreadyExists() {
-        UserDto userDto = new UserDto(10L, "UserTest", "userTest@gmail.com", "userTestPassword");
-        userDto = userService.addUser(userDto);
+        UserCreateDto userCreateDto = new UserCreateDto("testUsername", "testEmail", "testPassword");
+        userService.addUser(userCreateDto);
 
-        UserDto finalUserDto = userDto;
-        Assertions.assertThatThrownBy(() -> userService.addUser(finalUserDto))
+        Assertions.assertThatThrownBy(() -> userService.addUser(userCreateDto))
                 .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("user already exists");
-
-        userService.deleteUser(userDto.getId());
     }
 
 
     @Test
-    @Order(4)
     void getUser_NotFound() {
         Assertions.assertThatThrownBy(() -> userService.getUserById(15L))
                 .isInstanceOf(NotFoundException.class)
@@ -85,59 +85,44 @@ public class UserServiceIntegrationTest {
     }
 
     @Test
-    @Order(5)
     void successful_get_user_by_email() {
-        UserEntity user = new UserEntity();
-        user.setUsername("Jane Doe");
-        user.setEmail("jane@test.com");
-        user.setPassword("test");
+        UserEntity user = getUserEntity();
         userRepository.save(user);
 
         UserDto found = userService.getByEmail("jane@test.com");
 
-        Assertions.assertThat("Jane Doe").isEqualTo(found.getUsername());
-
-        userRepository.delete(user);
+        Assertions.assertThat(found.email()).isEqualTo(user.getEmail());
     }
 
     @Test
-    @Order(6)
     void successful_get_user_by_username() {
-        UserEntity user = new UserEntity();
-        user.setUsername("John Doe");
-        user.setEmail("john@test.com");
-        user.setPassword("test");
+        UserEntity user = getUserEntity();
         userRepository.save(user);
 
-        UserDto found = userService.getByUsername("John Doe");
+        UserDto found = userService.getByUsername("Jane Doe");
 
         Assertions.assertThat(found).isNotNull();
-        Assertions.assertThat("john@test.com").isEqualTo(found.getEmail());
-
-        userRepository.delete(user);
+        Assertions.assertThat(found.username()).isEqualTo(user.getUsername());
     }
 
     @Test
-    @Order(7)
     void updateUser() {
-        UserDto userDto = new UserDto(1L, "UserTest", "userTest@gmail.com", "userTestPassword");
-        userDto = userService.addUser(userDto);
-        userDto.setUsername("WalterWhite");
+        UserEntity user = getUserEntity();
+        user = userRepository.save(user);
 
+        UserCreateDto userCreateDto = new UserCreateDto("Walter", "WalterWhite", "walter@gmail.com");
 
-        userDto = userService.updateUser(userDto.getId(), userDto);
+        UserDto userDto = userService.updateUser(user.getId(), userCreateDto);
 
-        Assertions.assertThat(userDto.getUsername()).isEqualTo("WalterWhite");
-
-        userService.deleteUser(userDto.getId());
+        Assertions.assertThat(userDto.email()).isEqualTo("WalterWhite");
     }
 
-
-    private List<UserEntity> getMockUsers(int count) {
-        List<UserEntity> users = new ArrayList<>(count);
-        for (int i = 0; i < count; i++) {
-            users.add(new UserEntity((long) i, "username" + i, "email" + i, "password" + i));
-        }
-        return users;
+    private UserEntity getUserEntity() {
+        UserEntity user = new UserEntity();
+        user.setUsername("Jane Doe");
+        user.setEmail("jane@test.com");
+        user.setPassword("test");
+        user.setCreatedDate(LocalDateTime.now());
+        return user;
     }
 }

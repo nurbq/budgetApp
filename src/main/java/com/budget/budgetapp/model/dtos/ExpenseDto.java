@@ -1,13 +1,14 @@
 package com.budget.budgetapp.model.dtos;
 
-import com.budget.budgetapp.data.entity.ExpenseCategory;
-import com.budget.budgetapp.data.entity.UserEntity;
-
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 
-public record ExpenseDto(Long id, UserEntity user, ExpenseCategory expenseCategory, LocalDateTime date,
-                         BigDecimal amount, String description) {
+public record ExpenseDto(String categoryName,
+                         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+                         LocalDateTime date,
+                         BigDecimal amount,
+                         String description) {
 
 }

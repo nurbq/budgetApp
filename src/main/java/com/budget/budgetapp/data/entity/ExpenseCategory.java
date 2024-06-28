@@ -18,10 +18,6 @@ public class ExpenseCategory {
     @Column(name = "category_name", unique = true, length = 150)
     private String categoryName;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private UserEntity user;
-
     @OneToMany(mappedBy = "expenseCategory", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private Set<Expense> expenses;
 }

@@ -1,7 +1,9 @@
 package com.budget.budgetapp.controller;
 
 
+import com.budget.budgetapp.model.dtos.UserCreateDto;
 import com.budget.budgetapp.model.dtos.UserDto;
+import com.budget.budgetapp.model.dtos.UserExpenseDto;
 import com.budget.budgetapp.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -30,18 +32,23 @@ public class UserController {
 
     @PostMapping("/add")
     @ResponseStatus(HttpStatus.CREATED)
-    public UserDto addUser(@RequestBody UserDto userDto) {
-        return userService.addUser(userDto);
+    public UserDto addUser(@RequestBody UserCreateDto userCreateDto) {
+        return userService.addUser(userCreateDto);
     }
 
     @PutMapping("/{id}")
-    public UserDto editUser(@PathVariable("id") Long id, @RequestBody UserDto userDto) {
-        return userService.updateUser(id, userDto);
+    public UserDto editUser(@PathVariable("id") Long id, @RequestBody UserCreateDto createUserDto) {
+        return userService.updateUser(id, createUserDto);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.RESET_CONTENT)
     public void deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
+    }
+
+    @GetMapping("/{username}/expense")
+    public List<UserExpenseDto> getUserExpense(@PathVariable String username) {
+        return userService.getUserExpenseByUsername(username);
     }
 }

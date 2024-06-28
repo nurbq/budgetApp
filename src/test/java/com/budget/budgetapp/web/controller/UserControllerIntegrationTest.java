@@ -9,6 +9,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDateTime;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -37,16 +39,16 @@ public class UserControllerIntegrationTest {
 
     @Test
     void addUser() throws Exception {
-        UserEntity userEntity = new UserEntity(1L,"JohnDoe", "jdoe@test.com", "password");
+        UserEntity userEntity = getUserEntity();
         ObjectMapper mapper = new ObjectMapper();
         String jsonString = mapper.writeValueAsString(userEntity);
         mockMvc.perform(post("/users/add").content(jsonString).contentType("application/json")).andExpect(status().isCreated())
-                .andExpect(content().string(containsString("jdoe@test.com")));
+                .andExpect(content().string(containsString("testEmail")));
     }
 
     @Test
     void addUser_exists() throws Exception {
-        UserEntity userEntity = new UserEntity(1L, "JohnDoe", "jdoe@test.com", "password");
+        UserEntity userEntity = getUserEntity();
         ObjectMapper mapper = new ObjectMapper();
         String jsonString = mapper.writeValueAsString(userEntity);
         mockMvc.perform(post("/users/add").content(jsonString).contentType("application/json"));
@@ -55,7 +57,7 @@ public class UserControllerIntegrationTest {
 
     @Test
     void updateCustomer() throws Exception {
-        UserEntity userEntity = new UserEntity(1L, "JohnDoe", "jdoe@test.com", "password");
+        UserEntity userEntity = getUserEntity();
         ObjectMapper mapper = new ObjectMapper();
         String jsonString = mapper.writeValueAsString(userEntity);
         mockMvc.perform(post("/users/add").content(jsonString).contentType("application/json"));
@@ -70,7 +72,7 @@ public class UserControllerIntegrationTest {
 
     @Test
     void updateCustomer_badRequest() throws Exception {
-        UserEntity userEntity = new UserEntity(1L, "JohnDoe", "jdoe@test.com", "password");
+        UserEntity userEntity = getUserEntity();
         ObjectMapper mapper = new ObjectMapper();
         String jsonString = mapper.writeValueAsString(userEntity);
         mockMvc.perform(post("/users/add").content(jsonString).contentType("application/json"));
@@ -83,7 +85,7 @@ public class UserControllerIntegrationTest {
 
     @Test
     void deleteCustomer() throws Exception {
-        UserEntity userEntity = new UserEntity(1L, "JohnDoe", "jdoe@test.com", "password");
+        UserEntity userEntity = getUserEntity();
         ObjectMapper mapper = new ObjectMapper();
         String jsonString = mapper.writeValueAsString(userEntity);
         mockMvc.perform(post("/users/add").content(jsonString).contentType("application/json"));
@@ -94,5 +96,9 @@ public class UserControllerIntegrationTest {
     @Test
     void deleteCustomer_userNotFound() throws Exception {
         mockMvc.perform(delete("/users/1")).andExpect(status().isNotFound());
+    }
+
+    private UserEntity getUserEntity() {
+        return new UserEntity(1L, "testUsername", "testEmail", "testPassword", LocalDateTime.now());
     }
 }

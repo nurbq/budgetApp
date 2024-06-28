@@ -3,8 +3,9 @@ package com.budget.budgetapp.service;
 
 import com.budget.budgetapp.data.entity.UserEntity;
 import com.budget.budgetapp.data.repository.UserRepository;
-import com.budget.budgetapp.error.ConflictException;
-import com.budget.budgetapp.error.NotFoundException;
+import com.budget.budgetapp.exception.ConflictException;
+import com.budget.budgetapp.exception.NotFoundException;
+import com.budget.budgetapp.model.dtos.UserCreateDto;
 import com.budget.budgetapp.model.dtos.UserDto;
 import com.budget.budgetapp.model.mappers.UserMapper;
 import org.assertj.core.api.Assertions;
@@ -14,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -26,9 +28,9 @@ import static org.mockito.Mockito.*;
 public class UserServiceTest {
 
     @Mock
-    UserRepository userRepository;
+    private UserRepository userRepository;
     @Mock
-    UserMapper userMapper;
+    private UserMapper userMapper;
 
     @InjectMocks
     private UserService userService;
@@ -40,20 +42,22 @@ public class UserServiceTest {
         List<UserDto> userEntities = userService.getAllUsers();
         assertThat(userEntities.size()).isEqualTo(2);
     }
+
     @Test
     void addUser() {
         UserEntity userEntity = getUserEntity();
-        UserDto userDto = new UserDto(null, "testUsername", "testEmail", "testPassword");
+        UserCreateDto createUserDto = new UserCreateDto("testUsername", "testEmail", "testPassword");
+        UserDto userDto = new UserDto(1L, "testUsername", "testEmail");
 
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
+        when(userMapper.toUserEntity(any(UserCreateDto.class))).thenReturn(userEntity);
         when(userRepository.save(any(UserEntity.class))).thenReturn(userEntity);
-        when(userMapper.toUserEntity(any(UserDto.class))).thenReturn(userEntity);
-        when(userMapper.toDto(any(UserEntity.class))).thenReturn(userDto);
+        when(userMapper.toUserDto(userEntity)).thenReturn(userDto);
 
-        userDto = userService.addUser(userDto);
+        userDto = userService.addUser(createUserDto);
 
         Assertions.assertThat(userDto).isNotNull();
-        Assertions.assertThat(userDto.getEmail()).isEqualTo("testEmail");
+        Assertions.assertThat(userDto.email()).isEqualTo(createUserDto.email());
     }
 
     @Test
@@ -61,25 +65,24 @@ public class UserServiceTest {
         UserEntity userEntity = getUserEntity();
         Optional<UserEntity> optional = Optional.of(userEntity);
         doReturn(optional).when(userRepository).findByEmail(userEntity.getEmail());
-        UserDto userDto = new UserDto(userEntity.getId(), userEntity.getUsername(), userEntity.getEmail(), userEntity.getPassword());
+        UserCreateDto userDto = new UserCreateDto(userEntity.getUsername(), userEntity.getEmail(), userEntity.getPassword());
 
-        Assertions.assertThatThrownBy(() -> {
-            userService.addUser(userDto);
-        }).isInstanceOf(ConflictException.class).hasMessageContaining("user already exists");
+        Assertions.assertThatThrownBy(() -> userService.addUser(userDto))
+                .isInstanceOf(ConflictException.class).hasMessageContaining("user already exists");
     }
 
     @Test
     void getUserById() {
         UserEntity userEntity = getUserEntity();
-        UserDto userDto = new UserDto(1L, "testUsername", "testEmail", "testPassword");
+        UserDto userDto = new UserDto(null, "testUsername", "testEmail");
         Optional<UserEntity> optional = Optional.of(userEntity);
         doReturn(optional).when(userRepository).findById(anyLong());
-        doReturn(userDto).when(userMapper).toDto(any(UserEntity.class));
+        doReturn(userDto).when(userMapper).toUserDto(any(UserEntity.class));
 
         userDto = userService.getUserById(userEntity.getId());
 
         assertThat(userDto).isNotNull();
-        assertThat(userDto.getUsername()).isEqualTo("testUsername");
+        assertThat(userDto.username()).isEqualTo("testUsername");
 
         verify(userRepository, times(1)).findById(userEntity.getId());
     }
@@ -98,14 +101,14 @@ public class UserServiceTest {
     @Test
     void getUserByUsername() {
         UserEntity userEntity = getUserEntity();
-        UserDto userDto = new UserDto(1L, "testUsername", "testEmail", "testPassword");
+        UserDto userDto = new UserDto(null, "testUsername", "testEmail");
         Optional<UserEntity> optional = Optional.of(userEntity);
         doReturn(optional).when(userRepository).findByUsername(userEntity.getUsername());
-        doReturn(userDto).when(userMapper).toDto(any(UserEntity.class));
+        doReturn(userDto).when(userMapper).toUserDto(any(UserEntity.class));
         userDto = userService.getByUsername(userEntity.getUsername());
 
         assertThat(userDto).isNotNull();
-        assertThat(userDto.getUsername()).isEqualTo("testUsername");
+        assertThat(userDto.username()).isEqualTo("testUsername");
     }
 
     @Test
@@ -122,20 +125,21 @@ public class UserServiceTest {
     @Test
     void getUserByEmail() {
         UserEntity userEntity = getUserEntity();
-        UserDto userDto = new UserDto(1L, "testUsername", "testEmail", "testPassword");
+        UserDto userDto = new UserDto(null, "testUsername", "testEmail");
         Optional<UserEntity> optional = Optional.of(userEntity);
         doReturn(optional).when(userRepository).findByEmail(userEntity.getEmail());
-        doReturn(userDto).when(userMapper).toDto(any(UserEntity.class));
+        doReturn(userDto).when(userMapper).toUserDto(any(UserEntity.class));
         userDto = userService.getByEmail(userEntity.getEmail());
 
         assertThat(userDto).isNotNull();
-        assertThat(userDto.getEmail()).isEqualTo("testEmail");
+        assertThat(userDto.email()).isEqualTo("testEmail");
     }
 
     @Test
     void getUserByEmail_NotExists() {
         UserEntity user = getUserEntity();
         Optional<UserEntity> optional = Optional.empty();
+
         doReturn(optional).when(userRepository).findByEmail(user.getEmail());
 
         Assertions.assertThatThrownBy(() -> {
@@ -146,26 +150,17 @@ public class UserServiceTest {
     @Test
     void updateUser() {
         UserEntity user = getUserEntity();
-        Optional<UserEntity> optional = Optional.of(user);
-        doReturn(optional).when(userRepository).findByEmail(user.getEmail());
-        when(userRepository.save(any(UserEntity.class))).thenReturn(user);
-        UserDto userDto = new UserDto(user.getId(), user.getUsername(), user.getEmail(), user.getPassword());
-        userDto = userService.updateUser(userDto.getId(), userDto);
+        UserCreateDto userCreateDto = new UserCreateDto(user.getUsername(), user.getEmail(), user.getPassword());
+        UserDto userDto = new UserDto(user.getId(), user.getUsername(), user.getEmail());
+
+        doReturn(Optional.of(user)).when(userRepository).findById(anyLong());
+        when(userRepository.save(any())).thenReturn(user);
+        when(userMapper.toUserDto(any())).thenReturn(userDto);
+
+        userDto = userService.updateUser(userDto.id(), userCreateDto);
 
         assertThat(userDto).isNotNull();
-        assertThat(userDto.getEmail()).isEqualTo("testEmail");
-    }
-
-    @Test
-    void updateUser_NotExists() {
-        UserEntity userEntity = getUserEntity();
-        Optional<UserEntity> optional = Optional.empty();
-        doReturn(optional).when(userRepository).findByEmail(userEntity.getEmail());
-        UserDto userDto = new UserDto(userEntity.getId(), userEntity.getUsername(), userEntity.getEmail(), userEntity.getPassword());
-
-        Assertions.assertThatThrownBy(() -> userService.updateUser(userDto.getId(), userDto))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining("user not found");
+        assertThat(userDto.email()).isEqualTo("testEmail");
     }
 
     @Test
@@ -194,13 +189,13 @@ public class UserServiceTest {
 
 
     private UserEntity getUserEntity() {
-        return new UserEntity(1L, "testUsername", "testEmail", "testPassword");
+        return new UserEntity(1L, "testUsername", "testEmail", "testPassword", LocalDateTime.now());
     }
 
     private List<UserEntity> getMockUsers(int count) {
         List<UserEntity> users = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
-            users.add(new UserEntity((long) i, "username" + i, "email" + i, "password" + i));
+            users.add(new UserEntity((long) i, "username" + i, "email" + i, "password" + i, LocalDateTime.now()));
         }
         return users;
     }

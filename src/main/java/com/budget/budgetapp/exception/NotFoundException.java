@@ -1,4 +1,4 @@
-package com.budget.budgetapp.error;
+package com.budget.budgetapp.exception;
 
 
 import org.springframework.http.HttpStatus;
